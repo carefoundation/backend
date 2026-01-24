@@ -18,6 +18,8 @@ const certificateRoutes = require('./certificateRoutes');
 const celebrityRoutes = require('./celebrityRoutes');
 const dashboardRoutes = require('./dashboardRoutes');
 const testRoutes = require('./testRoutes');
+const razorpayRoutes = require('./razorpayRoutes');
+const eventRegistrationRoutes = require('./eventRegistrationRoutes');
 
 router.use('/users', userRoutes);
 router.use('/auth', authRoutes);
@@ -35,6 +37,8 @@ router.use('/wallets', walletRoutes);
 router.use('/certificates', certificateRoutes);
 router.use('/celebrities', celebrityRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/razorpay', razorpayRoutes);
+router.use('/event-registrations', eventRegistrationRoutes);
 router.use('/', testRoutes);
 
 router.get('/', (req, res) => {

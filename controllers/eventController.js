@@ -14,7 +14,11 @@ exports.createEvent = async (req, res) => {
       address,
       city,
       state,
-      category
+      latitude,
+      longitude,
+      category,
+      expectedAttendees,
+      time
     } = req.body;
 
     if (!title || !description || !startDate || !endDate || !location) {
@@ -35,7 +39,11 @@ exports.createEvent = async (req, res) => {
       address: address || null,
       city: city || null,
       state: state || null,
+      latitude: latitude || null,
+      longitude: longitude || null,
       category: category || null,
+      expectedAttendees: expectedAttendees ? parseInt(expectedAttendees) : 0,
+      time: time || null,
       createdBy: req.user._id,
       status: 'upcoming',
     });

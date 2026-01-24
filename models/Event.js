@@ -41,6 +41,14 @@ const eventSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  latitude: {
+    type: Number,
+    default: null,
+  },
+  longitude: {
+    type: Number,
+    default: null,
+  },
   category: {
     type: String,
     default: null,
@@ -52,6 +60,14 @@ const eventSchema = new mongoose.Schema({
   attendees: {
     type: Number,
     default: 0,
+  },
+  expectedAttendees: {
+    type: Number,
+    default: 0,
+  },
+  time: {
+    type: String,
+    default: null,
   },
   status: {
     type: String,
