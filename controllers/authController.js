@@ -142,7 +142,8 @@ exports.signin = async (req, res) => {
           name: user.name,
           mobileNumber: user.mobileNumber,
           email: user.email,
-          role: user.role
+          role: user.role,
+          permissions: user.permissions || []
         },
         token
       }

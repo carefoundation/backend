@@ -3,7 +3,21 @@ const User = require('../models/User');
 
 exports.createBlog = async (req, res) => {
   try {
-    const { title, content, excerpt, image, category, tags } = req.body;
+    const { 
+      title, 
+      slug,
+      content, 
+      excerpt, 
+      image, 
+      category, 
+      tags,
+      status,
+      metaTitle,
+      metaDescription,
+      focusKeywords,
+      ogImage,
+      publishedAt
+    } = req.body;
 
     if (!title || !content) {
       return res.status(400).json({
@@ -14,13 +28,19 @@ exports.createBlog = async (req, res) => {
 
     const blog = await Blog.create({
       title,
+      slug: slug || null,
       content,
       excerpt: excerpt || null,
       image: image || null,
       category: category || null,
       tags: tags || [],
+      status: status || 'draft',
+      metaTitle: metaTitle || null,
+      metaDescription: metaDescription || null,
+      focusKeywords: focusKeywords || [],
+      ogImage: ogImage || null,
+      publishedAt: publishedAt ? new Date(publishedAt) : (status === 'published' ? new Date() : null),
       author: req.user._id,
-      status: 'draft',
     });
 
     res.status(201).json({

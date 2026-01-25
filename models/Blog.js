@@ -41,11 +41,26 @@ const blogSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['draft', 'published', 'archived'],
+    enum: ['draft', 'published', 'archived', 'scheduled'],
     default: 'draft',
   },
   publishedAt: {
     type: Date,
+    default: null,
+  },
+  metaTitle: {
+    type: String,
+    default: null,
+  },
+  metaDescription: {
+    type: String,
+    default: null,
+  },
+  focusKeywords: [{
+    type: String,
+  }],
+  ogImage: {
+    type: String,
     default: null,
   },
 }, {

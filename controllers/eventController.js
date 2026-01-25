@@ -18,7 +18,8 @@ exports.createEvent = async (req, res) => {
       longitude,
       category,
       expectedAttendees,
-      time
+      time,
+      endTime
     } = req.body;
 
     if (!title || !description || !startDate || !endDate || !location) {
@@ -44,6 +45,7 @@ exports.createEvent = async (req, res) => {
       category: category || null,
       expectedAttendees: expectedAttendees ? parseInt(expectedAttendees) : 0,
       time: time || null,
+      endTime: endTime || null,
       createdBy: req.user._id,
       status: 'upcoming',
     });

@@ -1,5 +1,6 @@
 const FormSubmission = require('../models/FormSubmission');
 const User = require('../models/User');
+const { sendReplyEmail } = require('../utils/emailService');
 
 exports.createFormSubmission = async (req, res) => {
   try {
@@ -114,7 +115,7 @@ exports.updateSubmission = async (req, res) => {
 
 exports.replyToSubmission = async (req, res) => {
   try {
-    const { replyMessage } = req.body;
+    const { replyMessage, toEmail } = req.body;
 
     if (!replyMessage) {
       return res.status(400).json({
@@ -123,7 +124,25 @@ exports.replyToSubmission = async (req, res) => {
       });
     }
 
-    const submission = await FormSubmission.findByIdAndUpdate(
+    // Get the submission first to get user details
+    const submission = await FormSubmission.findById(req.params.id);
+    
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        error: 'Form submission not found'
+      });
+    }
+
+    // Get admin user details
+    const adminUser = await User.findById(req.user._id);
+    const adminName = adminUser ? adminUser.name : 'Care Foundation Trust Team';
+
+    // Use provided email or fallback to submission email
+    const recipientEmail = toEmail || submission.email;
+
+    // Update submission
+    const updatedSubmission = await FormSubmission.findByIdAndUpdate(
       req.params.id,
       {
         replyMessage,
@@ -134,17 +153,26 @@ exports.replyToSubmission = async (req, res) => {
       { new: true }
     );
 
-    if (!submission) {
-      return res.status(404).json({
-        success: false,
-        error: 'Form submission not found'
-      });
+    // Send email
+    const emailResult = await sendReplyEmail(
+      recipientEmail,
+      submission.name,
+      submission.subject,
+      submission.message,
+      replyMessage,
+      adminName
+    );
+
+    if (!emailResult.success) {
+      console.error('Failed to send email:', emailResult.error || emailResult.message);
+      // Still return success for the reply, but log the email error
     }
 
     res.status(200).json({
       success: true,
-      message: 'Reply sent successfully',
-      data: submission
+      message: emailResult.success ? 'Reply sent successfully via email' : 'Reply saved successfully (email sending failed)',
+      data: updatedSubmission,
+      emailSent: emailResult.success
     });
   } catch (error) {
     res.status(400).json({

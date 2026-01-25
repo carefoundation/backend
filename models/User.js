@@ -87,6 +87,26 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  permissions: {
+    type: [String],
+    default: [],
+    enum: [
+      'manage_campaigns',
+      'manage_events',
+      'manage_blogs',
+      'manage_celebrities',
+      'manage_partners',
+      'manage_users',
+      'manage_donations',
+      'manage_volunteers',
+      'manage_fundraisers',
+      'view_reports',
+      'manage_products',
+      'manage_coupons',
+      'manage_queries',
+      'manage_form_submissions',
+    ],
+  },
 }, {
   timestamps: true,
 });
