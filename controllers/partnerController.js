@@ -1,5 +1,6 @@
 const Partner = require('../models/Partner');
 const User = require('../models/User');
+const { processFileFields, deleteS3FilesFromObject } = require('../utils/fileHelper');
 
 exports.createPartner = async (req, res) => {
   try {
@@ -107,12 +108,18 @@ exports.createPartner = async (req, res) => {
       }
     }
 
+    // Process and upload files to S3
+    const processedData = await processFileFields({
+      logo: finalLogo,
+      photo: finalPhoto,
+    }, ['logo', 'photo']);
+
     const partner = await Partner.create({
       name,
       type: typeLower,
       description: finalDescription,
-      logo: finalLogo || null,
-      photo: finalPhoto || null,
+      logo: processedData.logo || null,
+      photo: processedData.photo || null,
       programs: programs || [],
       impact: impact || null,
       since: since || null,
@@ -238,11 +245,7 @@ exports.getPartnersByType = async (req, res) => {
 
 exports.updatePartner = async (req, res) => {
   try {
-    const partner = await Partner.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const partner = await Partner.findById(req.params.id);
 
     if (!partner) {
       return res.status(404).json({
@@ -251,16 +254,39 @@ exports.updatePartner = async (req, res) => {
       });
     }
 
+    // Delete old files from S3 if new ones are being uploaded
+    const fieldsToCheck = ['logo', 'photo'];
+    const oldFiles = {};
+    fieldsToCheck.forEach(field => {
+      if (req.body[field] !== undefined && partner[field]) {
+        oldFiles[field] = partner[field];
+      }
+    });
+
+    // Process and upload new files to S3
+    const processedData = await processFileFields(req.body, ['logo', 'photo']);
+
+    // Delete old files from S3
+    if (Object.keys(oldFiles).length > 0) {
+      await deleteS3FilesFromObject(oldFiles);
+    }
+
+    const updatedPartner = await Partner.findByIdAndUpdate(
+      req.params.id,
+      processedData,
+      { new: true, runValidators: true }
+    );
+
     // If partner is approved and has a createdBy user, mark their KYC as completed
-    if (partner.status === 'approved' && partner.createdBy) {
-      await User.findByIdAndUpdate(partner.createdBy, {
+    if (updatedPartner.status === 'approved' && updatedPartner.createdBy) {
+      await User.findByIdAndUpdate(updatedPartner.createdBy, {
         partnerKycCompleted: true
       });
     }
 
     res.status(200).json({
       success: true,
-      data: partner
+      data: updatedPartner
     });
   } catch (error) {
     res.status(400).json({
@@ -272,7 +298,7 @@ exports.updatePartner = async (req, res) => {
 
 exports.deletePartner = async (req, res) => {
   try {
-    const partner = await Partner.findByIdAndDelete(req.params.id);
+    const partner = await Partner.findById(req.params.id);
 
     if (!partner) {
       return res.status(404).json({
@@ -280,6 +306,11 @@ exports.deletePartner = async (req, res) => {
         error: 'Partner not found'
       });
     }
+
+    // Delete files from S3 before deleting partner
+    await deleteS3FilesFromObject(partner);
+
+    await Partner.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
       success: true,

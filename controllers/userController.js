@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const Partner = require('../models/Partner');
 const { sendApprovedAccountEmail } = require('../utils/emailService');
+const { processFileFields, deleteS3FilesFromObject } = require('../utils/fileHelper');
 
 exports.getMe = async (req, res) => {
   try {
@@ -82,11 +83,7 @@ exports.updateUser = async (req, res) => {
       });
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const user = await User.findById(req.params.id);
 
     if (!user) {
       return res.status(404).json({
@@ -95,9 +92,32 @@ exports.updateUser = async (req, res) => {
       });
     }
 
+    // Delete old files from S3 if new ones are being uploaded
+    const fieldsToCheck = ['profileImage'];
+    const oldFiles = {};
+    fieldsToCheck.forEach(field => {
+      if (req.body[field] !== undefined && user[field]) {
+        oldFiles[field] = user[field];
+      }
+    });
+
+    // Process and upload new files to S3
+    const processedData = await processFileFields(req.body, ['profileImage']);
+
+    // Delete old files from S3
+    if (Object.keys(oldFiles).length > 0) {
+      await deleteS3FilesFromObject(oldFiles);
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      processedData,
+      { new: true, runValidators: true }
+    );
+
     res.status(200).json({
       success: true,
-      data: user
+      data: updatedUser
     });
   } catch (error) {
     res.status(400).json({
@@ -109,7 +129,7 @@ exports.updateUser = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findById(req.params.id);
 
     if (!user) {
       return res.status(404).json({
@@ -117,6 +137,11 @@ exports.deleteUser = async (req, res) => {
         error: 'User not found'
       });
     }
+
+    // Delete files from S3 before deleting user
+    await deleteS3FilesFromObject(user);
+
+    await User.findByIdAndDelete(req.params.id);
 
     res.status(200).json({
       success: true,

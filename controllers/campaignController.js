@@ -1,5 +1,6 @@
 const Campaign = require('../models/Campaign');
 const User = require('../models/User');
+const { processFileFields, deleteS3FilesFromObject } = require('../utils/fileHelper');
 
 exports.createCampaign = async (req, res) => {
   try {
@@ -24,15 +25,22 @@ exports.createCampaign = async (req, res) => {
       });
     }
 
+    // Process and upload files to S3
+    const processedData = await processFileFields({
+      image,
+      images,
+      documents,
+    }, ['image', 'images', 'documents']);
+
     const campaign = await Campaign.create({
       title,
       description,
       story: story || null,
       category,
       goalAmount: parseFloat(goalAmount),
-      image: image || null,
-      images: images || [],
-      documents: documents || [],
+      image: processedData.image || null,
+      images: processedData.images || [],
+      documents: processedData.documents || [],
       location: location || null,
       endDate: endDate || null,
       isUrgent: isUrgent || false,
@@ -180,9 +188,26 @@ exports.updateCampaign = async (req, res) => {
       }
     }
 
+    // Delete old files from S3 if new ones are being uploaded
+    const fieldsToCheck = ['image', 'images', 'documents'];
+    const oldFiles = {};
+    fieldsToCheck.forEach(field => {
+      if (req.body[field] !== undefined && campaign[field]) {
+        oldFiles[field] = campaign[field];
+      }
+    });
+
+    // Process and upload new files to S3
+    const processedData = await processFileFields(req.body, ['image', 'images', 'documents']);
+
+    // Delete old files from S3
+    if (Object.keys(oldFiles).length > 0) {
+      await deleteS3FilesFromObject(oldFiles);
+    }
+
     campaign = await Campaign.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      processedData,
       { new: true, runValidators: false }
     );
 
@@ -216,6 +241,9 @@ exports.deleteCampaign = async (req, res) => {
         error: 'Not authorized to delete this campaign'
       });
     }
+
+    // Delete files from S3 before deleting campaign
+    await deleteS3FilesFromObject(campaign);
 
     await Campaign.findByIdAndDelete(req.params.id);
 
