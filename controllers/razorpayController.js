@@ -2,6 +2,10 @@ const Razorpay = require('razorpay');
 const crypto = require('crypto');
 const Donation = require('../models/Donation');
 const Campaign = require('../models/Campaign');
+const DonationCoupon = require('../models/DonationCoupon');
+const Partner = require('../models/Partner');
+const generateCouponCode = require('../utils/generateCouponCode');
+const { generateQRCode } = require('../utils/generateQRCode');
 
 // Lazy initialization of Razorpay instance
 let razorpay = null;
@@ -76,6 +80,7 @@ exports.verifyPayment = async (req, res) => {
       email,
       phoneNumber,
       campaignId,
+      partnerId,
       message,
     } = req.body;
 
@@ -143,10 +148,95 @@ exports.verifyPayment = async (req, res) => {
       });
     }
 
+    // Create coupon if payment is for a partner (only if user is logged in)
+    let coupon = null;
+    if (partnerId) {
+      // Check if user is logged in
+      if (!req.user || !req.user._id) {
+        return res.status(401).json({
+          success: false,
+          error: 'Please login to create a coupon. Coupons can only be created for logged-in users.'
+        });
+      }
+
+      try {
+        const mongoose = require('mongoose');
+        // Validate partnerId
+        if (mongoose.Types.ObjectId.isValid(partnerId)) {
+          const partner = await Partner.findById(partnerId);
+          if (partner) {
+            // Generate unique coupon code
+            let couponCode;
+            let isUnique = false;
+            let attempts = 0;
+            const maxAttempts = 10;
+
+            while (!isUnique && attempts < maxAttempts) {
+              couponCode = generateCouponCode();
+              const existingCoupon = await DonationCoupon.findOne({ couponCode });
+              if (!existingCoupon) {
+                isUnique = true;
+              }
+              attempts++;
+            }
+
+            if (isUnique) {
+              // Generate QR code
+              const qrCode = await generateQRCode(couponCode);
+
+              // Calculate expiry date (1 month from now)
+              const expiryDate = new Date();
+              expiryDate.setMonth(expiryDate.getMonth() + 1);
+
+              // Create coupon
+              coupon = await DonationCoupon.create({
+                couponCode,
+                qrCode,
+                userId: req.user._id,
+                partnerId: partnerId,
+                amount: parseFloat(amount),
+                donationId: donation._id,
+                paymentId: razorpay_payment_id,
+                status: 'active',
+                expiryDate,
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Coupon creation error:', error);
+        // Don't fail the payment if coupon creation fails, but log it
+      }
+    }
+
+    // Get partner name if coupon exists
+    let partnerName = null;
+    if (coupon && coupon.partnerId) {
+      try {
+        const partner = await Partner.findById(coupon.partnerId);
+        if (partner) {
+          partnerName = partner.name || partner.businessName;
+        }
+      } catch (error) {
+        console.error('Error fetching partner:', error);
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: 'Payment verified and donation recorded successfully',
-      data: donation
+      data: {
+        donation,
+        coupon: coupon ? {
+          id: coupon._id,
+          couponCode: coupon.couponCode,
+          qrCode: coupon.qrCode,
+          amount: coupon.amount,
+          expiryDate: coupon.expiryDate,
+          partnerId: coupon.partnerId,
+          partnerName: partnerName,
+        } : null
+      }
     });
   } catch (error) {
     console.error('Payment verification error:', error);

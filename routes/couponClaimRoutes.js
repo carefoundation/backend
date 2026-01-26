@@ -8,8 +8,12 @@ router.post('/claim', protect, couponClaimController.claimCoupon);
 router.get('/my-claims', protect, couponClaimController.getMyClaims);
 
 // Admin routes
+router.get('/', protect, authorize('admin'), couponClaimController.getAllClaims); // Supports query params like ?status=pending
+router.get('/all', protect, authorize('admin'), couponClaimController.getAllClaims);
 router.get('/pending', protect, authorize('admin'), couponClaimController.getPendingClaims);
 router.put('/:id/approve', protect, authorize('admin'), couponClaimController.approveClaim);
 router.put('/:id/reject', protect, authorize('admin'), couponClaimController.rejectClaim);
+router.put('/:id/mark-as-paid', protect, authorize('admin'), couponClaimController.markAsPaid);
+router.put('/:id/mark-paid', protect, authorize('admin'), couponClaimController.markAsPaid); // Alias for backward compatibility
 
 module.exports = router;
