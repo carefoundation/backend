@@ -125,6 +125,9 @@ exports.getHomePageStats = async (req, res) => {
       trendingCampaigns,
       healthPartners,
       foodPartners,
+      hospitalPartners,
+      medicinePartners,
+      pathologyPartners,
     ] = await Promise.all([
       Donation.aggregate([
         { $match: { status: 'completed' } },
@@ -160,6 +163,71 @@ exports.getHomePageStats = async (req, res) => {
         .limit(6),
       Partner.find({ type: 'health', status: 'approved' }).limit(6),
       Partner.find({ type: 'food', status: 'approved' }).limit(6),
+      Partner.find({ 
+        type: 'health', 
+        status: 'approved',
+        $and: [
+          {
+            $or: [
+              { 'formData.category': 'hospital' },
+              { 'formData.hospitalImages': { $exists: true, $ne: null } },
+              { 'formData.bedCapacity': { $exists: true, $ne: null } },
+              { name: { $regex: /hospital/i } }
+            ]
+          },
+          {
+            $or: [
+              { 'formData.category': { $exists: false } },
+              { 'formData.category': null },
+              { 'formData.category': { $ne: 'doctor' } }
+            ]
+          }
+        ]
+      }).limit(6),
+      Partner.find({ 
+        type: 'health', 
+        status: 'approved',
+        $and: [
+          {
+            $or: [
+              { 'formData.category': 'medicine' },
+              { 'formData.pharmacyName': { $exists: true, $ne: null } },
+              { 'formData.pharmacyImages': { $exists: true, $ne: null } },
+              { 'formData.medicineType': { $exists: true, $ne: null } },
+              { name: { $regex: /pharmacy|medicine/i } }
+            ]
+          },
+          {
+            $or: [
+              { 'formData.category': { $exists: false } },
+              { 'formData.category': null },
+              { 'formData.category': { $ne: 'doctor' } }
+            ]
+          }
+        ]
+      }).limit(6),
+      Partner.find({ 
+        type: 'health', 
+        status: 'approved',
+        $and: [
+          {
+            $or: [
+              { 'formData.category': 'pathology' },
+              { 'formData.labName': { $exists: true, $ne: null } },
+              { 'formData.labImages': { $exists: true, $ne: null } },
+              { 'formData.testTypes': { $exists: true, $ne: null } },
+              { name: { $regex: /pathology|lab|laboratory/i } }
+            ]
+          },
+          {
+            $or: [
+              { 'formData.category': { $exists: false } },
+              { 'formData.category': null },
+              { 'formData.category': { $ne: 'doctor' } }
+            ]
+          }
+        ]
+      }).limit(6),
     ]);
 
     const rate = successRate[0] ? Math.round((successRate[0].completed / successRate[0].total) * 100) : 98;
@@ -177,6 +245,9 @@ exports.getHomePageStats = async (req, res) => {
         trendingCampaigns,
         healthPartners,
         foodPartners,
+        hospitalPartners,
+        medicinePartners,
+        pathologyPartners,
       }
     });
   } catch (error) {

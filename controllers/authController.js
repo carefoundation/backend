@@ -134,14 +134,26 @@ exports.signin = async (req, res) => {
       });
     }
 
+    // Fetch fresh user data to ensure we have latest approval status
+    const freshUser = await User.findById(user._id);
+    if (!freshUser) {
+      return res.status(401).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
     // Check if user is approved (admin users are auto-approved)
+    // Convert to boolean explicitly to handle any type issues
+    const isApproved = Boolean(freshUser.isApproved === true || freshUser.isApproved === 'true');
+    
     // Send email for Partner, Volunteer, Fundraiser, and Staff roles when trying to login with pending status
     const rolesRequiringApproval = ['partner', 'volunteer', 'fundraiser', 'staff'];
-    if (!user.isApproved && user.role !== 'admin') {
+    if (!isApproved && freshUser.role !== 'admin') {
       // Send email notification about pending status for specific roles
-      if (rolesRequiringApproval.includes(user.role.toLowerCase())) {
+      if (rolesRequiringApproval.includes(freshUser.role.toLowerCase())) {
         try {
-          await sendPendingAccountEmail(user.email, user.name);
+          await sendPendingAccountEmail(freshUser.email, freshUser.name);
         } catch (emailError) {
           console.error('Error sending pending account email:', emailError);
         }
@@ -153,19 +165,20 @@ exports.signin = async (req, res) => {
       });
     }
 
-    const token = generateToken(user._id);
+    const token = generateToken(freshUser._id);
 
     res.status(200).json({
       success: true,
       message: 'User signed in successfully',
       data: {
         user: {
-          id: user._id,
-          name: user.name,
-          mobileNumber: user.mobileNumber,
-          email: user.email,
-          role: user.role,
-          permissions: user.permissions || []
+          id: freshUser._id,
+          name: freshUser.name,
+          mobileNumber: freshUser.mobileNumber,
+          email: freshUser.email,
+          role: freshUser.role,
+          permissions: freshUser.permissions || [],
+          isApproved: isApproved
         },
         token
       }

@@ -225,10 +225,84 @@ exports.getPartnersByType = async (req, res) => {
     const { type } = req.params;
     // Convert to lowercase to match enum values
     const typeLower = type.toLowerCase();
-    const partners = await Partner.find({
-      type: typeLower,
+    
+    let query = {
       status: 'approved'
-    }).sort({ createdAt: -1 });
+    };
+    
+    // Handle main types (health, food)
+    if (typeLower === 'health' || typeLower === 'food') {
+      query.type = typeLower;
+    } 
+    // Handle sub-types that are stored as 'health' type
+    else if (typeLower === 'hospital') {
+      query.type = 'health';
+      query.$and = [
+        {
+          $or: [
+            { 'formData.category': 'hospital' },
+            { 'formData.hospitalImages': { $exists: true, $ne: null } },
+            { 'formData.bedCapacity': { $exists: true, $ne: null } },
+            { name: { $regex: /hospital/i } }
+          ]
+        },
+        {
+          $or: [
+            { 'formData.category': { $exists: false } },
+            { 'formData.category': null },
+            { 'formData.category': { $ne: 'doctor' } }
+          ]
+        }
+      ];
+    } 
+    else if (typeLower === 'medicine' || typeLower === 'pharmacy') {
+      query.type = 'health';
+      query.$and = [
+        {
+          $or: [
+            { 'formData.category': 'medicine' },
+            { 'formData.pharmacyName': { $exists: true, $ne: null } },
+            { 'formData.pharmacyImages': { $exists: true, $ne: null } },
+            { 'formData.medicineType': { $exists: true, $ne: null } },
+            { name: { $regex: /pharmacy|medicine/i } }
+          ]
+        },
+        {
+          $or: [
+            { 'formData.category': { $exists: false } },
+            { 'formData.category': null },
+            { 'formData.category': { $ne: 'doctor' } }
+          ]
+        }
+      ];
+    } 
+    else if (typeLower === 'pathology') {
+      query.type = 'health';
+      query.$and = [
+        {
+          $or: [
+            { 'formData.category': 'pathology' },
+            { 'formData.labName': { $exists: true, $ne: null } },
+            { 'formData.labImages': { $exists: true, $ne: null } },
+            { 'formData.testTypes': { $exists: true, $ne: null } },
+            { name: { $regex: /pathology|lab|laboratory/i } }
+          ]
+        },
+        {
+          $or: [
+            { 'formData.category': { $exists: false } },
+            { 'formData.category': null },
+            { 'formData.category': { $ne: 'doctor' } }
+          ]
+        }
+      ];
+    }
+    // Default: try to match by type
+    else {
+      query.type = typeLower;
+    }
+    
+    const partners = await Partner.find(query).sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
