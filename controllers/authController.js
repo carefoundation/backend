@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { sendPendingAccountEmail } = require('../utils/emailService');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'your-secret-key-change-in-production', {
@@ -71,6 +72,16 @@ exports.register = async (req, res) => {
 
     const user = await User.create(userData);
 
+    // Send pending account email for Partner, Volunteer, Fundraiser, and Staff roles
+    const rolesRequiringApproval = ['partner', 'volunteer', 'fundraiser', 'staff'];
+    if (rolesRequiringApproval.includes(user.role.toLowerCase()) && !user.isApproved) {
+      try {
+        await sendPendingAccountEmail(user.email, user.name);
+      } catch (emailError) {
+        console.error('Error sending pending account email during registration:', emailError);
+      }
+    }
+
     // Don't generate token - user needs admin approval first
     res.status(201).json({
       success: true,
@@ -124,7 +135,18 @@ exports.signin = async (req, res) => {
     }
 
     // Check if user is approved (admin users are auto-approved)
+    // Send email for Partner, Volunteer, Fundraiser, and Staff roles when trying to login with pending status
+    const rolesRequiringApproval = ['partner', 'volunteer', 'fundraiser', 'staff'];
     if (!user.isApproved && user.role !== 'admin') {
+      // Send email notification about pending status for specific roles
+      if (rolesRequiringApproval.includes(user.role.toLowerCase())) {
+        try {
+          await sendPendingAccountEmail(user.email, user.name);
+        } catch (emailError) {
+          console.error('Error sending pending account email:', emailError);
+        }
+      }
+      
       return res.status(403).json({
         success: false,
         error: 'Your account is pending admin approval. Please wait for approval before logging in.'

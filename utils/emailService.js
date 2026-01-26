@@ -310,6 +310,195 @@ exports.sendReplyEmail = async (toEmail, userName, originalSubject, originalMess
   }
 };
 
+// Email template for pending account notification
+const getPendingAccountEmailTemplate = (userName) => {
+  const currentYear = new Date().getFullYear();
+  
+  const escapeHtml = (text) => {
+    if (!text) return '';
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
+  const safeUserName = escapeHtml(userName);
+  
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Pending Approval - Care Foundation Trust</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f3f4f6; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center; color: #ffffff; }
+        .content { padding: 40px 30px; }
+        .footer { background: #1f2937; padding: 30px; text-align: center; color: #9ca3af; font-size: 12px; }
+        .contact-info { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">Care Foundation Trust®</h1>
+        </div>
+        <div class="content">
+            <h2 style="color: #1f2937;">Dear ${safeUserName},</h2>
+            <p style="color: #4b5563; line-height: 1.7;">
+                Thank you for registering with our platform.
+            </p>
+            <p style="color: #4b5563; line-height: 1.7;">
+                We would like to inform you that your account request has been successfully received and is currently <strong style="color: #10b981;">pending for admin approval</strong>. Our team is reviewing your details, and this process usually takes a short time.
+            </p>
+            <p style="color: #4b5563; line-height: 1.7;">
+                You will receive another email as soon as your account is approved by the admin.
+            </p>
+            <div class="contact-info">
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">If you have any questions or need assistance, please feel free to contact us at <strong style="color: #10b981;">+91 9136521052</strong>.</p>
+            </div>
+            <p style="color: #4b5563; line-height: 1.7;">
+                Thank you for your patience and understanding.
+            </p>
+            <p style="color: #4b5563; line-height: 1.7; margin-top: 30px;">
+                Best regards,<br>
+                <strong style="color: #10b981;">carefoundationtrust.org</strong>
+            </p>
+        </div>
+        <div class="footer">
+            <p style="margin: 0;">© ${currentYear} Care Foundation Trust®. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+  `;
+};
+
+// Email template for account approval notification
+const getApprovedAccountEmailTemplate = (userName) => {
+  const currentYear = new Date().getFullYear();
+  
+  const escapeHtml = (text) => {
+    if (!text) return '';
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
+  const safeUserName = escapeHtml(userName);
+  
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Approved - Care Foundation Trust</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f3f4f6; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
+        .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 30px; text-align: center; color: #ffffff; }
+        .content { padding: 40px 30px; }
+        .footer { background: #1f2937; padding: 30px; text-align: center; color: #9ca3af; font-size: 12px; }
+        .contact-info { background: #ecfdf5; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981; }
+        .success-badge { background: #10b981; color: #ffffff; padding: 10px 20px; border-radius: 20px; display: inline-block; margin: 20px 0; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="margin: 0; font-size: 28px;">Care Foundation Trust®</h1>
+        </div>
+        <div class="content">
+            <h2 style="color: #1f2937;">Dear ${safeUserName},</h2>
+            <div style="text-align: center;">
+                <div class="success-badge">✓ Account Approved</div>
+            </div>
+            <p style="color: #4b5563; line-height: 1.7;">
+                We are happy to inform you that your account has been <strong style="color: #10b981;">successfully approved by the admin</strong>.
+            </p>
+            <p style="color: #4b5563; line-height: 1.7;">
+                You can now log in and start using all the features of our platform without any restrictions.
+            </p>
+            <div class="contact-info">
+                <p style="margin: 0; color: #1f2937; font-weight: 600;">If you need any help or have questions, feel free to reach out to us at <strong style="color: #10b981;">+91 9136521052</strong>.</p>
+            </div>
+            <p style="color: #4b5563; line-height: 1.7; margin-top: 30px;">
+                Welcome to care foundation trust, and we wish you a great experience with us!
+            </p>
+            <p style="color: #4b5563; line-height: 1.7; margin-top: 30px;">
+                Best regards,<br>
+                <strong style="color: #10b981;">carefoundationtrust.org</strong>
+            </p>
+        </div>
+        <div class="footer">
+            <p style="margin: 0;">© ${currentYear} Care Foundation Trust®. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
+  `;
+};
+
+// Send pending account email
+exports.sendPendingAccountEmail = async (toEmail, userName) => {
+  try {
+    if (!process.env.SMTP_USER && !process.env.EMAIL_USER) {
+      console.log('SMTP not configured. Email sending skipped.');
+      return { success: false, message: 'SMTP not configured' };
+    }
+
+    const transporter = createTransporter();
+    
+    const mailOptions = {
+      from: `"Care Foundation Trust" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
+      to: toEmail,
+      subject: 'Account Pending Approval - Care Foundation Trust',
+      html: getPendingAccountEmailTemplate(userName),
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Pending account email sent successfully:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending pending account email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Send approved account email
+exports.sendApprovedAccountEmail = async (toEmail, userName) => {
+  try {
+    if (!process.env.SMTP_USER && !process.env.EMAIL_USER) {
+      console.log('SMTP not configured. Email sending skipped.');
+      return { success: false, message: 'SMTP not configured' };
+    }
+
+    const transporter = createTransporter();
+    
+    const mailOptions = {
+      from: `"Care Foundation Trust" <${process.env.SMTP_USER || process.env.EMAIL_USER}>`,
+      to: toEmail,
+      subject: 'Account Approved - Care Foundation Trust',
+      html: getApprovedAccountEmailTemplate(userName),
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Approved account email sent successfully:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Error sending approved account email:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 // Test email connection
 exports.testEmailConnection = async () => {
   try {

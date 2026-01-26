@@ -12,7 +12,26 @@ const app = express();
 // Middleware
 app.use(helmet());
 app.use(cors());
-app.use(morgan('dev'));
+// Enhanced logging with colors and details
+app.use(morgan((tokens, req, res) => {
+  const status = tokens.status(req, res);
+  const statusColor = status >= 500 ? '\x1b[31m' : status >= 400 ? '\x1b[33m' : status >= 300 ? '\x1b[36m' : '\x1b[32m';
+  const resetColor = '\x1b[0m';
+  
+  return [
+    statusColor,
+    tokens.method(req, res),
+    resetColor,
+    tokens.url(req, res),
+    statusColor,
+    status,
+    resetColor,
+    '-',
+    tokens['response-time'](req, res), 'ms',
+    '-',
+    tokens.res(req, res, 'content-length'), 'bytes'
+  ].join(' ');
+}));
 app.use(express.json({ limit: '500mb' }));
 app.use(express.urlencoded({ extended: true, limit: '500mb' }));
 

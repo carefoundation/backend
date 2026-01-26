@@ -21,6 +21,7 @@ const dashboardRoutes = require('./dashboardRoutes');
 const testRoutes = require('./testRoutes');
 const razorpayRoutes = require('./razorpayRoutes');
 const eventRegistrationRoutes = require('./eventRegistrationRoutes');
+const uploadRoutes = require('./uploadRoutes');
 
 router.use('/users', userRoutes);
 router.use('/auth', authRoutes);
@@ -41,6 +42,7 @@ router.use('/celebrities', celebrityRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/razorpay', razorpayRoutes);
 router.use('/event-registrations', eventRegistrationRoutes);
+router.use('/upload', uploadRoutes);
 router.use('/', testRoutes);
 
 router.get('/', (req, res) => {

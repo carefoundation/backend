@@ -21,12 +21,12 @@ router.put('/:id', userController.updateUser);
 // DELETE user
 router.delete('/:id', userController.deleteUser);
 
-// Admin only routes for user approval
-// GET pending users (admin only)
-router.get('/pending/approval', authorize('admin'), userController.getPendingUsers);
+// Admin and Staff routes for user approval
+// GET pending users (admin and staff only)
+router.get('/pending/approval', authorize('admin', 'staff'), userController.getPendingUsers);
 
-// PUT approve user (admin only)
-router.put('/:id/approve', authorize('admin'), userController.approveUser);
+// PUT approve user (admin and staff only)
+router.put('/:id/approve', authorize('admin', 'staff'), userController.approveUser);
 
 // DELETE reject user (admin only)
 router.delete('/:id/reject', authorize('admin'), userController.rejectUser);

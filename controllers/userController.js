@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const Partner = require('../models/Partner');
+const { sendApprovedAccountEmail } = require('../utils/emailService');
 
 exports.getMe = async (req, res) => {
   try {
@@ -160,6 +161,16 @@ exports.approveUser = async (req, res) => {
         success: false,
         error: 'User not found'
       });
+    }
+
+    // Send approval email notification for Partner, Volunteer, Fundraiser, and Staff roles
+    const rolesRequiringApproval = ['partner', 'volunteer', 'fundraiser', 'staff'];
+    if (rolesRequiringApproval.includes(user.role.toLowerCase())) {
+      try {
+        await sendApprovedAccountEmail(user.email, user.name);
+      } catch (emailError) {
+        console.error('Error sending approval email:', emailError);
+      }
     }
 
     res.status(200).json({
