@@ -161,7 +161,38 @@ exports.getHomePageStats = async (req, res) => {
         .populate('createdBy', 'name')
         .sort({ donors: -1, currentAmount: -1 })
         .limit(6),
-      Partner.find({ type: 'health', status: 'approved' }).limit(6),
+      Partner.find({ 
+        type: 'health', 
+        status: 'approved',
+        $nor: [
+          {
+            $or: [
+              { 'formData.category': 'hospital' },
+              { 'formData.hospitalImages': { $exists: true, $ne: null } },
+              { 'formData.bedCapacity': { $exists: true, $ne: null } },
+              { name: { $regex: /hospital/i } }
+            ]
+          },
+          {
+            $or: [
+              { 'formData.category': 'medicine' },
+              { 'formData.pharmacyName': { $exists: true, $ne: null } },
+              { 'formData.pharmacyImages': { $exists: true, $ne: null } },
+              { 'formData.medicineType': { $exists: true, $ne: null } },
+              { name: { $regex: /pharmacy|medicine/i } }
+            ]
+          },
+          {
+            $or: [
+              { 'formData.category': 'pathology' },
+              { 'formData.labName': { $exists: true, $ne: null } },
+              { 'formData.labImages': { $exists: true, $ne: null } },
+              { 'formData.testTypes': { $exists: true, $ne: null } },
+              { name: { $regex: /pathology|lab|laboratory/i } }
+            ]
+          }
+        ]
+      }).limit(6),
       Partner.find({ type: 'food', status: 'approved' }).limit(6),
       Partner.find({ 
         type: 'health', 

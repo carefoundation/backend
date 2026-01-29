@@ -191,11 +191,17 @@ exports.markAsPaid = async (req, res) => {
 // Get partner's coupon claims
 exports.getMyClaims = async (req, res) => {
   try {
+    const { limit = 50 } = req.query;
+    const limitNum = parseInt(limit, 10) || 50;
+
     const claims = await CouponClaim.find({ partnerId: req.user._id })
-      .populate('couponId')
+      .select('_id couponId status amount paymentStatus reviewedBy paidBy createdAt updatedAt')
+      .populate('couponId', 'couponCode amount')
       .populate('reviewedBy', 'name email')
       .populate('paidBy', 'name email')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(limitNum)
+      .lean();
 
     res.status(200).json({
       success: true,

@@ -143,8 +143,14 @@ exports.getCampaignById = async (req, res) => {
 
 exports.getMyCampaigns = async (req, res) => {
   try {
+    const { limit = 50 } = req.query;
+    const limitNum = parseInt(limit, 10) || 50;
+
     const campaigns = await Campaign.find({ createdBy: req.user._id })
-      .sort({ createdAt: -1 });
+      .select('_id title description image category currentAmount goalAmount donors endDate location status createdAt')
+      .sort({ createdAt: -1 })
+      .limit(limitNum)
+      .lean();
 
     res.status(200).json({
       success: true,

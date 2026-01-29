@@ -63,16 +63,20 @@ exports.createCoupon = async (req, res) => {
 
 exports.getAllCoupons = async (req, res) => {
   try {
-    const { status } = req.query;
+    const { status, limit = 50 } = req.query;
     const query = {};
+    const limitNum = parseInt(limit, 10) || 50;
 
     if (status) query.status = status;
 
     // Fetch regular coupons
     const regularCoupons = await Coupon.find(query)
+      .select('_id code description discountType discountValue minPurchase maxDiscount validFrom validUntil usageLimit status issuedBy issuedTo createdAt')
       .populate('issuedBy', 'name email')
       .populate('issuedTo', 'name email')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(limitNum)
+      .lean();
 
     // Fetch donation coupons
     const donationQuery = {};
@@ -84,10 +88,13 @@ exports.getAllCoupons = async (req, res) => {
       }
     }
     const donationCoupons = await DonationCoupon.find(donationQuery)
+      .select('_id couponCode amount status userId partnerId redeemedBy redeemedAt createdAt')
       .populate('userId', 'name email')
       .populate('partnerId', 'name email type')
       .populate('redeemedBy', 'name email')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(limitNum)
+      .lean();
 
     // Get claim information for donation coupons
     const donationCouponIds = donationCoupons.map(c => c._id);

@@ -158,10 +158,16 @@ exports.createDonation = async (req, res) => {
 
 exports.getAllDonations = async (req, res) => {
   try {
+    const { limit = 50 } = req.query;
+    const limitNum = parseInt(limit, 10) || 50;
+
     const donations = await Donation.find()
+      .select('_id amount firstName lastName email phoneNumber status createdAt campaignId userId')
       .populate('userId', 'name email')
       .populate('campaignId', 'title')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(limitNum)
+      .lean();
 
     res.status(200).json({
       success: true,
@@ -203,9 +209,15 @@ exports.getDonationById = async (req, res) => {
 
 exports.getMyDonations = async (req, res) => {
   try {
+    const { limit = 50 } = req.query;
+    const limitNum = parseInt(limit, 10) || 50;
+
     const donations = await Donation.find({ userId: req.user._id })
+      .select('_id amount firstName lastName email status createdAt campaignId')
       .populate('campaignId', 'title image')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(limitNum)
+      .lean();
 
     res.status(200).json({
       success: true,
