@@ -13,12 +13,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy to VPS (Backend)
+      - name: Deploy Backend to VPS
         uses: appleboy/ssh-action@v1
         with:
           host: 72.62.192.246
           username: root
-          port: 222
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /var/www/carefoundation/backend
