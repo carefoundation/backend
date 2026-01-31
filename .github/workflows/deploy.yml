@@ -10,18 +10,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Deploy Backend to VPS
         uses: appleboy/ssh-action@v1
         with:
           host: 72.62.192.246
           username: root
           key: ${{ secrets.VPS_SSH_KEY }}
-          key_format: base64
           script: |
+            set -e
+            
+            # Load user profile to get PATH
+            source ~/.bashrc || true
+            source ~/.profile || true
+            source ~/.nvm/nvm.sh || true
+            
             cd /var/www/carefoundation/backend
-            git pull origin main
+            
+            # Check npm availability
+            echo "Node version: $(node --version)"
+            echo "NPM version: $(npm --version)"
+            
+            # Reset and pull
+            git fetch --all
+            git reset --hard origin/main
+            git pull origin main --force
+            
+            # Install dependencies
             npm install
+            
+            # Restart PM2
             pm2 restart care-backend
